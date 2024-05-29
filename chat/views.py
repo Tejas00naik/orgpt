@@ -4,7 +4,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from chat.serializers import UserSerializer
 
+from django.shortcuts import render
 # Create your views here.
+
+def home(request):
+    return render(request, 'chat/index.html')
 
 class RegistrationView(APIView):
     def post(self, request):
