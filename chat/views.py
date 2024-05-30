@@ -7,8 +7,10 @@ from chat.serializers import UserSerializer
 from django.shortcuts import render
 # Create your views here.
 
+def profile(request):
+    return render(request, 'profile.html')
 def home(request):
-    return render(request, 'chat/index.html')
+    return render(request, 'index.html')
 
 class RegistrationView(APIView):
     def post(self, request):
