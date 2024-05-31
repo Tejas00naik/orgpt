@@ -1,0 +1,4 @@
+Django==5.0.4
+channels
+channels_redis
+django-allauth==0.61.0
