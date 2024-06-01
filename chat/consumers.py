@@ -1,49 +1,46 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 import redis
+from django.conf import settings
+from openai import OpenAI, AsyncOpenAI
 
 r = redis.Redis(host='localhost', port=6379, db=0)
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.roomGroupName = "group_chat_gfg"
-        await self.channel_layer.group_add(
-            self.roomGroupName,
-            self.channel_name
-        )
         await self.accept()
-        # Load chat history from Redis
-        await self.load_chat_history()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.roomGroupName,
-            self.channel_name
-        )
+        # Clean up action, if any
+        pass
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
         message = text_data_json["message"]
-        username = text_data_json["username"]
 
-        # Store message in Redis
-        r.rpush(f'chat_{self.roomGroupName}', json.dumps({"message": message, "username": username}))
+        # Process message through OpenAI
+        response = await self.chat_with_openai(message)
 
-        await self.channel_layer.group_send(
-            self.roomGroupName, {
-                "type": "sendMessage",
-                "message": message,
-                "username": username,
-            })
+        # Send both the user message and AI response
+        await self.send(text_data=json.dumps({"message": message, "username": "You"}))
+        await self.send(text_data=json.dumps({"message": response, "username": "AI"}))
 
-    async def sendMessage(self, event):
-        message = event["message"]
-        username = event["username"]
-        await self.send(text_data=json.dumps({"message": message, "username": username}))
+    async def chat_with_openai(self, message):
+        client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
+        print("tejas", message)
+        previous_messages = [
+            {
+                "role": "system",
+                "content": """you are a layer ai. answer like shakespear for fun though."""
+            },
+            {
+            "role": "user",
+            "content": f"""Generate a response to the following message: {message}"""
+            }
+        ]
 
-    async def load_chat_history(self):
-        # Load the last 50 messages from Redis
-        chat_history = r.lrange(f'chat_{self.roomGroupName}', -50, -1)
-        for message in chat_history:
-            message_data = json.loads(message)
-            await self.send(text_data=json.dumps({"message": message_data["message"], "username": message_data["username"]}))
+        openai_response = await client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=previous_messages,
+        )
+        return openai_response.choices[0].message.content

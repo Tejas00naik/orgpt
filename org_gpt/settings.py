@@ -175,3 +175,5 @@ CHANNEL_LAYERS = {
 
 # Set this to the path where users should be redirected after logging in
 LOGIN_REDIRECT_URL = 'chat-room'
+
+OPENAI_API_KEY = ''
