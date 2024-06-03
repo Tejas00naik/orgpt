@@ -5,6 +5,7 @@ from rest_framework.views import APIView
 from chat.serializers import UserSerializer
 
 from django.shortcuts import render, redirect
+from chat.models import ChatSession
 # Create your views here.
 
 def profile(request):
@@ -16,7 +17,8 @@ def chat_view(request, *args, **kwargs):
     if not request.user.is_authenticated:
         return redirect("account_login")
     context = {}
-    return render(request, 'chat/chat.html',context)
+    session, created = ChatSession.objects.get_or_create(user=request.user)
+    return render(request, 'chat/chat.html',{'session_id': session.id})
 
 class RegistrationView(APIView):
     def post(self, request):
